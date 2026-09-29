@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MIF-10 Significant Fibrosis Calculator</title>
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --text:#18212f;
+    --muted:#667085;
+    --line:#e4e7ec;
+    --primary:#1f5fbf;
+    --primary-dark:#174a94;
+    --success:#18794e;
+    --warning:#b7791f;
+    --danger:#b42318;
+    --soft-blue:#eef4ff;
+    --soft-green:#ecfdf3;
+    --soft-yellow:#fffaeb;
+    --soft-red:#fef3f2;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+  }
+  .wrap{
+    max-width:1040px;
+    margin:0 auto;
+    padding:36px 18px 64px;
+  }
+  .hero{
+    background:linear-gradient(135deg,#173f7a 0%,#1f5fbf 58%,#2f76d2 100%);
+    color:#fff;
+    border-radius:20px;
+    padding:30px;
+    box-shadow:0 12px 28px rgba(31,95,191,.16);
+    margin-bottom:22px;
+  }
+  .hero h1{
+    margin:0 0 8px;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.15;
+    letter-spacing:-.02em;
+  }
+  .hero p{
+    margin:0;
+    max-width:790px;
+    color:rgba(255,255,255,.9);
+    font-size:16px;
+  }
+  .badge{
+    display:inline-block;
+    margin-top:14px;
+    padding:6px 10px;
+    border:1px solid rgba(255,255,255,.28);
+    background:rgba(255,255,255,.1);
+    border-radius:999px;
+    font-size:13px;
+    font-weight:650;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1.25fr .75fr;
+    gap:22px;
+  }
+  @media(max-width:820px){
+    .grid{grid-template-columns:1fr}
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:24px;
+    box-shadow:0 4px 16px rgba(16,24,40,.05);
+  }
+  .card h2{
+    margin:0 0 6px;
+    font-size:21px;
+  }
+  .sub{
+    margin:0 0 18px;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .inputs{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px 16px;
+  }
+  @media(max-width:560px){
+    .inputs{grid-template-columns:1fr}
+  }
+  label{
+    display:block;
+    font-weight:650;
+    font-size:14px;
+    margin-bottom:6px;
+  }
+  .field{
+    position:relative;
+  }
+  input{
+    width:100%;
+    border:1px solid #cfd5df;
+    border-radius:10px;
+    padding:11px 72px 11px 12px;
+    font-size:15px;
+    outline:none;
+    transition:.15s;
+    background:#fff;
+  }
+  input:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(31,95,191,.12);
+  }
+  .unit{
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#7a8391;
+    font-size:12px;
+    pointer-events:none;
+    text-align:right;
+  }
+  .actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:20px;
+  }
+  button{
+    appearance:none;
+    border:0;
+    border-radius:10px;
+    padding:11px 16px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .primary{
+    color:#fff;
+    background:var(--primary);
+  }
+  .primary:hover{background:var(--primary-dark)}
+  .secondary{
+    color:#344054;
+    background:#f2f4f7;
+  }
+  .note{
+    margin-top:15px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .result-empty{
+    border:1px dashed #cfd5df;
+    border-radius:14px;
+    padding:28px 18px;
+    color:var(--muted);
+    text-align:center;
+  }
+  .result{
+    display:none;
+  }
+  .prob{
+    font-size:44px;
+    font-weight:800;
+    letter-spacing:-.03em;
+    margin:6px 0 2px;
+  }
+  .class-pill{
+    display:inline-block;
+    font-weight:800;
+    border-radius:999px;
+    padding:6px 10px;
+    margin:5px 0 16px;
+    font-size:13px;
+  }
+  .meter{
+    position:relative;
+    height:12px;
+    border-radius:999px;
+    background:linear-gradient(to right,
+      var(--soft-green) 0%,
+      var(--soft-green) 28.4%,
+      var(--soft-yellow) 28.4%,
+      var(--soft-yellow) 40.3%,
+      var(--soft-red) 40.3%,
+      var(--soft-red) 100%);
+    overflow:visible;
+    border:1px solid #e7e7e7;
+    margin:14px 0 8px;
+  }
+  .marker{
+    position:absolute;
+    top:-5px;
+    width:3px;
+    height:20px;
+    background:#111827;
+    border-radius:2px;
+    transform:translateX(-1px);
+  }
+  .scale{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:16px;
+  }
+  .result-box{
+    border-radius:14px;
+    padding:14px;
+    margin-top:14px;
+    font-size:14px;
+  }
+  details{
+    margin-top:18px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    background:#fbfcfe;
+  }
+  summary{
+    cursor:pointer;
+    font-weight:750;
+  }
+  details p, details li{
+    color:#475467;
+    font-size:13px;
+  }
+  .warning{
+    background:#fffaf0;
+    border:1px solid #f1d59a;
+    border-radius:14px;
+    padding:16px;
+    margin-top:18px;
+  }
+  .warning strong{color:#8a5a12}
+  .foot{
+    margin-top:22px;
+    color:#667085;
+    font-size:12px;
+  }
+  .formula{
+    margin-top:22px;
+  }
+  code.formula-code{
+    display:block;
+    white-space:normal;
+    word-break:break-word;
+    background:#101828;
+    color:#eef2f6;
+    border-radius:12px;
+    padding:14px;
+    font-size:12px;
+    line-height:1.6;
+  }
+  .privacy{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    margin-top:15px;
+    padding:12px 14px;
+    background:var(--soft-blue);
+    border-radius:12px;
+    font-size:13px;
+    color:#344054;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="hero">
+    <h1>MIF-10 Calculator</h1>
+    <p>
+      Biomarker-based estimation of the probability of significant liver fibrosis.
+      Enter the 10 model variables in the units shown below.
+    </p>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Patient / sample inputs</h2>
+
+      <div class="inputs">
+        <div>
+          <label for="gdf15">GDF-15</label>
+          <div class="field">
+            <input id="gdf15" type="number" min="0" step="any" placeholder="e.g. 1200">
+            <span class="unit">pg/mL</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="ykl40">YKL-40</label>
+          <div class="field">
+            <input id="ykl40" type="number" min="0" step="any" placeholder="e.g. 80">
+            <span class="unit">ng/mL</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="proc3">PRO-C3</label>
+          <div class="field">
+            <input id="proc3" type="number" min="0" step="any" placeholder="e.g. 15">
+            <span class="unit">ng/mL</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="proc6">PRO-C6</label>
+          <div class="field">
+            <input id="proc6" type="number" min="0" step="any" placeholder="e.g. 10">
+            <span class="unit">ng/mL</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="ldl">LDL cholesterol</label>
+          <div class="field">
+            <input id="ldl" type="number" min="0" step="any" placeholder="e.g. 2.6">
+            <span class="unit">mmol/L</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="tg">Triglycerides</label>
+          <div class="field">
+            <input id="tg" type="number" min="0" step="any" placeholder="e.g. 1.5">
+            <span class="unit">mmol/L</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="hba1c">HbA1c</label>
+          <div class="field">
+            <input id="hba1c" type="number" min="0" step="any" placeholder="e.g. 6.0">
+            <span class="unit">%</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="inr">INR</label>
+          <div class="field">
+            <input id="inr" type="number" min="0" step="any" placeholder="e.g. 1.0">
+            <span class="unit">ratio</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="tp">Total protein</label>
+          <div class="field">
+            <input id="tp" type="number" min="0" step="any" placeholder="e.g. 72">
+            <span class="unit">g/L</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="alt">ALT</label>
+          <div class="field">
+            <input id="alt" type="number" min="0" step="any" placeholder="e.g. 35">
+            <span class="unit">U/L</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="calculateMIF10()">Calculate MIF-10</button>
+        <button class="secondary" onclick="resetForm()">Reset</button>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h2>Result</h2>
+      <p class="sub">Predicted probability and pre-specified MIF-10 category.</p>
+
+      <div id="resultEmpty" class="result-empty">
+        Enter all 10 variables and select <strong>Calculate MIF-10</strong>.
+      </div>
+
+      <div id="result" class="result">
+        <div class="sub" style="margin-bottom:0">Probability of significant fibrosis</div>
+        <div id="probability" class="prob">—</div>
+        <div id="classPill" class="class-pill">—</div>
+
+        <div class="meter">
+          <div id="marker" class="marker" style="left:0%"></div>
+        </div>
+        <div class="scale">
+          <span>0</span>
+          <span>0.284</span>
+          <span>0.403</span>
+          <span>1.0</span>
+        </div>
+
+        <div id="interpretation" class="result-box"></div>
+
+        <div class="actions" style="margin-top:14px">
+          <button class="secondary" onclick="copyResult()">Copy result</button>
+          <button class="secondary" onclick="window.print()">Print</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card" style="margin-top:22px">
+    <h2>About MIF-10</h2>
+    <p class="sub">
+      MIF-10 was developed using specific biomarker assays. Please use the units shown above.
+    </p>
+
+    <details>
+      <summary>Assay information</summary>
+      <p>
+        GDF-15 was measured using the R&amp;D Systems Quantikine assay (DGD150), and PRO-C3 and PRO-C6 using Nordic Bioscience assays.
+        Measurements obtained from other assay platforms may not be directly interchangeable and may require additional validation or recalibration.
+      </p>
+    </details>
+
+    <details>
+      <summary>Model equation</summary>
+      <div class="formula">
+        <code class="formula-code">
+          Z = −47.18 + 0.948·ln(GDF15+1) + 0.525·ln(YKL40+1) + 0.732·ln(PROC3+1)
+          + 1.409·ln(PROC6+1) − 2.500·ln(LDL+1) + 1.247·ln(TG+1)
+          + 0.417·ln(HbA1c+1) + 21.300·ln(INR+1) + 4.335·ln(TP+1)
+          + 0.204·ln(ALT+1); P = 1 / (1 + e<sup>−Z</sup>)
+        </code>
+      </div>
+      <p>
+        Pre-specified thresholds: <strong>Rule-out &lt; 0.284</strong>;
+        <strong>Grey zone 0.284 to &lt; 0.403</strong>;
+        <strong>Rule-in ≥ 0.403</strong>.
+      </p>
+    </details>
+
+    <div class="foot">
+      MIF-10 results should be interpreted in the appropriate clinical and research context.
+    </div>
+  </section>
+</div>
+
+<script>
+function getNumber(id){
+  const el = document.getElementById(id);
+  const raw = el.value.trim();
+  if(raw === "") return null;
+  const v = Number(raw);
+  if(!Number.isFinite(v) || v < 0) return NaN;
+  return v;
+}
+
+function calculateMIF10(){
+  const ids = ["gdf15","ykl40","proc3","proc6","ldl","tg","hba1c","inr","tp","alt"];
+  const vals = {};
+  for(const id of ids){
+    vals[id] = getNumber(id);
+    if(vals[id] === null || Number.isNaN(vals[id])){
+      alert("Please enter a valid non-negative value for all 10 variables.");
+      document.getElementById(id).focus();
+      return;
+    }
+  }
+
+  const ln1p = x => Math.log(x + 1);
+
+  const z =
+    -47.18
+    + 0.948 * ln1p(vals.gdf15)
+    + 0.525 * ln1p(vals.ykl40)
+    + 0.732 * ln1p(vals.proc3)
+    + 1.409 * ln1p(vals.proc6)
+    - 2.500 * ln1p(vals.ldl)
+    + 1.247 * ln1p(vals.tg)
+    + 0.417 * ln1p(vals.hba1c)
+    + 21.300 * ln1p(vals.inr)
+    + 4.335 * ln1p(vals.tp)
+    + 0.204 * ln1p(vals.alt);
+
+  const p = 1 / (1 + Math.exp(-z));
+
+  let cls, text, bg, fg;
+  if(p < 0.284){
+    cls = "Rule-out";
+    text = "The predicted probability is below the pre-specified rule-out threshold (0.284).";
+    bg = "var(--soft-green)";
+    fg = "var(--success)";
+  }else if(p < 0.403){
+    cls = "Grey zone";
+    text = "The predicted probability lies within the indeterminate grey zone (0.284 to <0.403).";
+    bg = "var(--soft-yellow)";
+    fg = "var(--warning)";
+  }else{
+    cls = "Rule-in";
+    text = "The predicted probability is at or above the pre-specified rule-in threshold (0.403).";
+    bg = "var(--soft-red)";
+    fg = "var(--danger)";
+  }
+
+  document.getElementById("resultEmpty").style.display = "none";
+  document.getElementById("result").style.display = "block";
+
+  document.getElementById("probability").textContent = (p * 100).toFixed(1) + "%";
+  const pill = document.getElementById("classPill");
+  pill.textContent = cls;
+  pill.style.background = bg;
+  pill.style.color = fg;
+
+  const box = document.getElementById("interpretation");
+  box.style.background = bg;
+  box.style.color = fg;
+  box.innerHTML = "<strong>" + cls + "</strong><br>" + text;
+
+  const marker = document.getElementById("marker");
+  marker.style.left = Math.min(100, Math.max(0, p*100)) + "%";
+
+  window._mif10Result = {
+    probability: p,
+    classification: cls
+  };
+}
+
+function resetForm(){
+  ["gdf15","ykl40","proc3","proc6","ldl","tg","hba1c","inr","tp","alt"].forEach(id=>{
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("resultEmpty").style.display = "block";
+  document.getElementById("result").style.display = "none";
+  window._mif10Result = null;
+}
+
+async function copyResult(){
+  if(!window._mif10Result) return;
+  const r = window._mif10Result;
+  const text =
+    "MIF-10 predicted probability: " + (r.probability*100).toFixed(1) + "%\n" +
+    "Classification: " + r.classification + "\n" +
+    "Thresholds: Rule-out <0.284; Grey zone 0.284–<0.403; Rule-in ≥0.403.\n" +
+    "Research use only.";
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("Result copied.");
+  }catch(e){
+    alert(text);
+  }
+}
+</script>
+</body>
+</html>
